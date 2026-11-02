@@ -10,28 +10,40 @@ import org.junit.jupiter.api.Test;
 
 class ConversionTest {
 
-	private static final Currency EUR = Currency.getInstance("EUR");
-
 	private static final Currency USD = Currency.getInstance("USD");
+
+	private static final Conversion CONVERSION = conversion("7.00", "7.00");
 
 	@Test
 	void comparesAmountsByValue() {
-		Conversion conversion = conversion(USD, "7.0");
+		Conversion sameValues = conversion("7.0", "7.0");
 
-		assertThat(conversion).isEqualTo(conversion(USD, "7.00")).hasSameHashCodeAs(conversion(USD, "7.00"));
-		assertThat(conversion.lines().get(0)).isEqualTo(conversion(USD, "7.00").lines().get(0))
-			.hasSameHashCodeAs(conversion(USD, "7.00").lines().get(0));
+		assertThat(CONVERSION).isEqualTo(sameValues).hasSameHashCodeAs(sameValues);
 	}
 
 	@Test
-	void differentValuesAreNotEqual() {
-		assertThat(conversion(USD, "7.00")).isNotEqualTo(conversion(USD, "7.01"));
-		assertThat(conversion(USD, "7.00")).isNotEqualTo(conversion(EUR, "7.00"));
+	void differentTotalIsNotEqual() {
+		assertThat(CONVERSION).isNotEqualTo(conversion("7.01", "7.00"));
 	}
 
-	private static Conversion conversion(Currency currency, String amount) {
-		BigDecimal value = new BigDecimal(amount);
-		return new Conversion(value, List.of(new ConvertedLine(currency, value, value)));
+	@Test
+	void differentLinesAreNotEqual() {
+		assertThat(CONVERSION).isNotEqualTo(conversion("7.00", "7.01"));
+	}
+
+	@Test
+	void otherTypeIsNotEqual() {
+		assertThat(CONVERSION).isNotEqualTo("7.00");
+	}
+
+	@Test
+	void linesCannotBeChangedAfterwards() {
+		assertThat(CONVERSION.lines()).isUnmodifiable();
+	}
+
+	private static Conversion conversion(String total, String lineAmount) {
+		BigDecimal amount = new BigDecimal(lineAmount);
+		return new Conversion(new BigDecimal(total), List.of(new ConvertedLine(USD, amount, amount)));
 	}
 
 }
