@@ -18,22 +18,35 @@ import org.springframework.stereotype.Service;
 @Service
 public final class CurrencyConverter {
 
+	private static final Currency CZK = Currency.getInstance("CZK");
+
 	public Conversion convert(Map<Currency, BigDecimal> holdings, Currency target,
 			Function<Currency, Optional<Rate>> rates) {
 		int decimals = Currencies.requireSupported(target).getDefaultFractionDigits();
-		Rate targetRate = rates.apply(target).orElseThrow(() -> new RateNotAvailableException(target));
+		if (holdings.isEmpty()) {
+			return new Conversion(BigDecimal.ZERO.setScale(decimals), List.of());
+		}
+		Rate targetRate = rateOf(target, rates);
 
 		BigDecimal totalCzk = BigDecimal.ZERO;
 		List<ConvertedLine> lines = new ArrayList<>();
 		for (Map.Entry<Currency, BigDecimal> holding : holdings.entrySet()) {
 			Currency currency = holding.getKey();
-			Rate rate = rates.apply(currency).orElseThrow(() -> new RateNotAvailableException(currency));
+			Rate rate = rateOf(currency, rates);
 			BigDecimal czk = toCzk(holding.getValue(), rate);
 			totalCzk = totalCzk.add(czk);
 			// Rounded for display only and never added up, so the total is rounded once (see README decision 4).
 			lines.add(new ConvertedLine(currency, holding.getValue(), fromCzk(czk, targetRate, decimals)));
 		}
 		return new Conversion(fromCzk(totalCzk, targetRate, decimals), lines);
+	}
+
+	// CZK is always 1 and is never looked up, so it works without CNB (see README decision 7).
+	private static Rate rateOf(Currency currency, Function<Currency, Optional<Rate>> rates) {
+		if (CZK.equals(currency)) {
+			return Rate.CZK;
+		}
+		return rates.apply(currency).orElseThrow(() -> new RateNotAvailableException(currency));
 	}
 
 	// Rate only allows powers of 10 as units, so this division is always exact (see README decision 2).

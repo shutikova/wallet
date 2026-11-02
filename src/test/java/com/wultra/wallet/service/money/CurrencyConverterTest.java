@@ -40,8 +40,12 @@ class CurrencyConverterTest {
 
 	private static final Map<Currency, Rate> RATES = CnbFixture.rates("daily-2026-10-30.txt");
 
-	private static final Function<Currency, Optional<Rate>> RATE_LOOKUP = currency -> CZK.equals(currency)
-			? Optional.of(Rate.CZK) : Optional.ofNullable(RATES.get(currency));
+	private static final Function<Currency, Optional<Rate>> RATE_LOOKUP = currency -> Optional
+		.ofNullable(RATES.get(currency));
+
+	private static final Function<Currency, Optional<Rate>> NO_LOOKUP_ALLOWED = currency -> {
+		throw new AssertionError("No rate should be needed for " + currency);
+	};
 
 	private final CurrencyConverter converter = new CurrencyConverter();
 
@@ -138,6 +142,15 @@ class CurrencyConverterTest {
 	}
 
 	@Test
+	void czkNeverNeedsARate() {
+		Map<Currency, BigDecimal> holdings = Map.of(CZK, new BigDecimal("12.34"));
+
+		Conversion conversion = this.converter.convert(holdings, CZK, NO_LOOKUP_ALLOWED);
+
+		assertThat(conversion.total().toPlainString()).isEqualTo("12.34");
+	}
+
+	@Test
 	void jpyTargetHasNoDecimals() {
 		Conversion conversion = convert(JPY, Map.of(USD, "1.00"));
 
@@ -150,6 +163,20 @@ class CurrencyConverterTest {
 		assertThat(convert(USD).total().toPlainString()).isEqualTo("0.00");
 		assertThat(convert(JPY).total().toPlainString()).isEqualTo("0");
 		assertThat(convert(USD).lines()).isEmpty();
+	}
+
+	@Test
+	void emptyHoldingsNeedNoRates() {
+		Conversion conversion = this.converter.convert(Map.of(), USD, NO_LOOKUP_ALLOWED);
+
+		assertThat(conversion.total().toPlainString()).isEqualTo("0.00");
+		assertThat(conversion.lines()).isEmpty();
+	}
+
+	@Test
+	void emptyHoldingsStillRejectATargetOutsideTheList() {
+		assertThatThrownBy(() -> this.converter.convert(Map.of(), KWD, NO_LOOKUP_ALLOWED))
+			.isInstanceOf(UnsupportedCurrencyException.class);
 	}
 
 	@Test
