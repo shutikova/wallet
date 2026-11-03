@@ -1,5 +1,6 @@
 package com.wultra.wallet.configuration;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +21,17 @@ public class JacksonConfiguration {
 				.setCoercion(CoercionInputShape.Integer, CoercionAction.Fail)
 				.setCoercion(CoercionInputShape.Float, CoercionAction.Fail)
 				.setCoercion(CoercionInputShape.Boolean, CoercionAction.Fail));
+	}
+
+	// The MCP library writes its errors straight into the response, which would include the stack trace.
+	@Bean
+	public JsonMapperBuilderCustomizer noStackTracesInResponses() {
+		return builder -> builder.addMixIn(Throwable.class, ThrowableWithoutInternals.class);
+	}
+
+	@JsonIgnoreProperties({ "stackTrace", "cause", "suppressed", "localizedMessage" })
+	private interface ThrowableWithoutInternals {
+
 	}
 
 }
