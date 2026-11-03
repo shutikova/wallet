@@ -1,3 +1,8 @@
 spring:
   application:
     name: wallet
+
+wallet:
+  cnb:
+    connect-timeout: 2s
+    read-timeout: 5s
