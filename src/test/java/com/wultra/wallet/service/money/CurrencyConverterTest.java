@@ -16,6 +16,7 @@ import com.wultra.wallet.model.ConvertedLine;
 import com.wultra.wallet.model.Rate;
 import com.wultra.wallet.model.error.RateNotAvailableException;
 import com.wultra.wallet.model.error.UnsupportedCurrencyException;
+import com.wultra.wallet.service.cnb.CnbFiles;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -38,7 +39,7 @@ class CurrencyConverterTest {
 
 	private static final Currency XDR = Currency.getInstance("XDR");
 
-	private static final Map<Currency, Rate> RATES = CnbFixture.rates("daily-2026-10-30.txt");
+	private static final Map<Currency, Rate> RATES = CnbFiles.table("daily-2026-10-30.txt").rates();
 
 	private static final Function<Currency, Optional<Rate>> RATE_LOOKUP = currency -> Optional
 		.ofNullable(RATES.get(currency));
@@ -229,8 +230,7 @@ class CurrencyConverterTest {
 	}
 
 	@Test
-	void xdrTargetIsUnsupportedEvenThoughCnbQuotesIt() {
-		assertThat(RATES).containsKey(XDR);
+	void xdrTargetIsUnsupported() {
 		assertThatThrownBy(() -> convert(XDR, Map.of(USD, "1.00"))).isInstanceOf(UnsupportedCurrencyException.class);
 	}
 

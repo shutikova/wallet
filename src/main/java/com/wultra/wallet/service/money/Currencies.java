@@ -47,4 +47,9 @@ public final class Currencies {
 		return currency;
 	}
 
+	// Takes a code as CNB wrote it, which does not have to be a valid ISO 4217 code.
+	public static boolean isSupported(String code) {
+		return SUPPORTED.stream().anyMatch(currency -> currency.getCurrencyCode().equals(code));
+	}
+
 }

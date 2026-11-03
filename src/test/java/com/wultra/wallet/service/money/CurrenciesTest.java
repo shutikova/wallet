@@ -7,9 +7,11 @@ import java.util.Currency;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.wultra.wallet.model.error.InvalidCurrencyException;
 import com.wultra.wallet.model.error.UnsupportedCurrencyException;
+import com.wultra.wallet.service.cnb.CnbFiles;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -51,13 +53,24 @@ class CurrenciesTest {
 		assertThatThrownBy(() -> Currencies.requireSupported(currency)).isInstanceOf(UnsupportedCurrencyException.class);
 	}
 
+	// Reads the file directly, because the parser already filters by this list.
 	@Test
 	void listIsCnbsDailyTableWithoutXdrPlusCzk() {
-		Set<Currency> expected = new HashSet<>(CnbFixture.rates("daily-2026-10-30.txt").keySet());
-		expected.remove(Currency.getInstance("XDR"));
+		Set<Currency> expected = CnbFiles.read("daily-2026-10-30.txt").lines()
+			.skip(2)
+			.map(row -> row.split("\\|")[3])
+			.filter(code -> !code.equals("XDR"))
+			.map(Currency::getInstance)
+			.collect(Collectors.toCollection(HashSet::new));
 		expected.add(Currency.getInstance("CZK"));
 
 		assertThat(Currencies.SUPPORTED).isEqualTo(expected);
+	}
+
+	@ParameterizedTest
+	@CsvSource({ "USD,true", "CZK,true", "XDR,false", "ZZZ,false", "usd,false" })
+	void checksACodeAsCnbWroteIt(String code, boolean supported) {
+		assertThat(Currencies.isSupported(code)).isEqualTo(supported);
 	}
 
 	// Decimal places from the ISO 4217 list published on 2026-09-17, for every supported currency.

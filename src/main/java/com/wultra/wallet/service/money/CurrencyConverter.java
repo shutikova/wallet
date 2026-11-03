@@ -18,13 +18,19 @@ import org.springframework.stereotype.Service;
 @Service
 public final class CurrencyConverter {
 
-	private static final Currency CZK = Currency.getInstance("CZK");
+	// With nothing to convert, a total needs no rates and works while CNB is down (see README decision 3).
+	public boolean needsRates(Map<Currency, BigDecimal> holdings, Currency target) {
+		return !holdings.keySet().stream().allMatch(target::equals);
+	}
 
 	public Conversion convert(Map<Currency, BigDecimal> holdings, Currency target,
 			Function<Currency, Optional<Rate>> rates) {
 		int decimals = Currencies.requireSupported(target).getDefaultFractionDigits();
-		if (holdings.isEmpty()) {
-			return new Conversion(BigDecimal.ZERO.setScale(decimals), List.of());
+		if (!needsRates(holdings, target)) {
+			BigDecimal total = holdings.getOrDefault(target, BigDecimal.ZERO).setScale(decimals);
+			return new Conversion(total, holdings.keySet().stream()
+				.map(currency -> new ConvertedLine(currency, total, total))
+				.toList());
 		}
 		Rate targetRate = rateOf(target, rates);
 
