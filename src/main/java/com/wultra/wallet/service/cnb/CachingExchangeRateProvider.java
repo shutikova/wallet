@@ -68,6 +68,7 @@ public class CachingExchangeRateProvider implements ExchangeRateProvider {
 			RateTable fetched = this.client.fetchDaily(today);
 			if (this.cached == null || fetched.date().isAfter(this.cached.date())) {
 				this.cached = fetched;
+				log.info("Loaded CNB rate table of {}", fetched.date());
 			}
 			this.lastAttemptFailed = false;
 		}

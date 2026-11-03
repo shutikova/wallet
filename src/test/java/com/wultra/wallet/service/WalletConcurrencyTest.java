@@ -14,11 +14,16 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.wultra.wallet.model.Balance;
 import com.wultra.wallet.model.error.InsufficientFundsException;
 import com.wultra.wallet.repository.InMemoryWalletStorage;
 import com.wultra.wallet.service.money.CurrencyConverter;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.RepeatedTest;
+import org.slf4j.LoggerFactory;
 
 // Repeated because a race may not show on every run. See README decision 5.
 class WalletConcurrencyTest {
@@ -28,6 +33,17 @@ class WalletConcurrencyTest {
 	private final WalletService service = new WalletService(new InMemoryWalletStorage(), new CurrencyConverter(), () -> {
 		throw new AssertionError("CNB should not be needed");
 	});
+
+	// Thousands of money movements would flood the test output.
+	@BeforeAll
+	static void silenceWalletLogging() {
+		((Logger) LoggerFactory.getLogger(WalletService.class)).setLevel(Level.OFF);
+	}
+
+	@AfterAll
+	static void restoreWalletLogging() {
+		((Logger) LoggerFactory.getLogger(WalletService.class)).setLevel(null);
+	}
 
 	@RepeatedTest(20)
 	void hundredWithdrawalsOfOneUsdFromFiftySucceedExactlyFiftyTimes() throws Exception {

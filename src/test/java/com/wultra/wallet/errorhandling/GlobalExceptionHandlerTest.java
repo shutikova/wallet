@@ -22,11 +22,14 @@ import com.wultra.wallet.service.cnb.CnbFiles;
 import com.wultra.wallet.service.cnb.ExchangeRateProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -38,6 +41,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 // Sends real requests through the real service, so each error comes from the code that raises it in production.
 @SpringBootTest
 @AutoConfigureMockMvc
+@ExtendWith(OutputCaptureExtension.class)
 class GlobalExceptionHandlerTest {
 
 	private static final String DEPOSITS = "/api/v1/wallet/deposits";
@@ -198,7 +202,14 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
-	void unexpectedErrorShowsNoInternalDetails() throws Exception {
+	void rejectedRequestsAreLogged(CapturedOutput output) throws Exception {
+		sendMoney(WITHDRAWALS, "1", "USD");
+
+		assertThat(output).contains("Request rejected: insufficient-funds: The USD balance is too low for this withdrawal");
+	}
+
+	@Test
+	void unexpectedErrorGoesToTheLogAndShowsNoInternalDetails(CapturedOutput output) throws Exception {
 		when(this.rateProvider.currentRates()).thenThrow(new IllegalStateException("secret internal detail"));
 		sendMoney(DEPOSITS, "5", "EUR").andExpect(status().isOk());
 
@@ -209,6 +220,7 @@ class GlobalExceptionHandlerTest {
 			.getContentAsString();
 
 		assertThat(body).doesNotContain("secret", "IllegalStateException");
+		assertThat(output).contains("secret internal detail");
 	}
 
 	@Test

@@ -92,6 +92,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	}
 
 	private static ProblemDetail problem(HttpStatus status, String type, String title, String detail) {
+		log.info("Request rejected: {}: {}", type, detail);
 		ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
 		problem.setType(URI.create("/problems/" + type));
 		problem.setTitle(title);

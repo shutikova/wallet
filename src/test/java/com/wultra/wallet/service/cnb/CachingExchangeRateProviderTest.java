@@ -23,8 +23,12 @@ import com.wultra.wallet.model.RatesView;
 import com.wultra.wallet.model.error.CnbFetchException;
 import com.wultra.wallet.model.error.RatesUnavailableException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
 // 27 Oct 2026 is a Tuesday, 28 Oct a holiday, 30 Oct a Friday and 2 Nov a Monday. Tables are real CNB files.
+@ExtendWith(OutputCaptureExtension.class)
 class CachingExchangeRateProviderTest {
 
 	private static final RateTable TABLE_27_OCT = CnbFiles.table("daily-2026-10-27.txt");
@@ -250,6 +254,14 @@ class CachingExchangeRateProviderTest {
 		assertThat(rates.valuationDate()).isEqualTo(LocalDate.of(2026, 11, 2));
 		assertThat(rates.provisional()).isTrue();
 		verify(this.client).fetchDaily(LocalDate.of(2026, 11, 2));
+	}
+
+	@Test
+	void aNewTableIsLoggedOnce(CapturedOutput output) {
+		ratesAt("2026-10-31T12:00", TABLE_30_OCT);
+		ratesAt("2026-11-01T12:00");
+
+		assertThat(output).containsOnlyOnce("Loaded CNB rate table of 2026-10-30");
 	}
 
 	@Test

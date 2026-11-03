@@ -17,6 +17,9 @@ public final class CnbFiles {
 
 	public static String read(String fileName) {
 		try (InputStream file = CnbFiles.class.getResourceAsStream("/cnb/" + fileName)) {
+			if (file == null) {
+				throw new IllegalArgumentException("No CNB test file named " + fileName);
+			}
 			return new String(file.readAllBytes(), StandardCharsets.UTF_8);
 		}
 		catch (IOException ex) {

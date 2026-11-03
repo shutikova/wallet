@@ -1,6 +1,13 @@
 spring:
   application:
     name: wallet
+  main:
+    banner-mode: "off"
+
+logging:
+  structured:
+    format:
+      console: ecs
 
 wallet:
   cnb:

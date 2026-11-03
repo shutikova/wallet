@@ -17,9 +17,11 @@ import com.wultra.wallet.service.money.Amounts;
 import com.wultra.wallet.service.money.Currencies;
 import com.wultra.wallet.service.money.CurrencyConverter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class WalletService {
 
@@ -32,7 +34,9 @@ public class WalletService {
 	public Balance deposit(String amount, String currencyCode) {
 		Currency currency = Currencies.parse(currencyCode);
 		BigDecimal deposited = Amounts.parsePositive(amount, currency);
-		return new Balance(currency, this.storage.add(currency, deposited));
+		BigDecimal balance = this.storage.add(currency, deposited);
+		log.info("Deposited {} {}, new balance {}", deposited, currency, balance);
+		return new Balance(currency, balance);
 	}
 
 	public Balance withdraw(String amount, String currencyCode) {
@@ -40,6 +44,7 @@ public class WalletService {
 		BigDecimal withdrawn = Amounts.parsePositive(amount, currency);
 		BigDecimal balance = this.storage.subtractIfAvailable(currency, withdrawn)
 			.orElseThrow(() -> new InsufficientFundsException(currency));
+		log.info("Withdrew {} {}, new balance {}", withdrawn, currency, balance);
 		return new Balance(currency, balance);
 	}
 

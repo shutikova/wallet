@@ -14,15 +14,34 @@ import com.wultra.wallet.model.error.UnsupportedCurrencyException;
 import com.wultra.wallet.repository.InMemoryWalletStorage;
 import com.wultra.wallet.service.money.CurrencyConverter;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
+@ExtendWith(OutputCaptureExtension.class)
 class WalletServiceTest {
 
 	// Deposits, withdrawals and balances never need CNB, so any call to it fails the test.
 	private final WalletService service = new WalletService(new InMemoryWalletStorage(), new CurrencyConverter(), () -> {
 		throw new AssertionError("CNB should not be needed");
 	});
+
+	@Test
+	void moneyMovementsAreLogged(CapturedOutput output) {
+		this.service.deposit("10", "USD");
+		this.service.withdraw("3", "USD");
+
+		assertThat(output).contains("Deposited 10.00 USD, new balance 10.00", "Withdrew 3.00 USD, new balance 7.00");
+	}
+
+	@Test
+	void aRejectedWithdrawalIsNotLoggedAsAMovement(CapturedOutput output) {
+		assertThatThrownBy(() -> this.service.withdraw("3", "USD")).isInstanceOf(InsufficientFundsException.class);
+
+		assertThat(output).doesNotContain("Withdrew");
+	}
 
 	@Test
 	void depositReturnsTheNewBalance() {
