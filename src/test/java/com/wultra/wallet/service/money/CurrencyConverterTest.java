@@ -119,7 +119,8 @@ class CurrencyConverterTest {
 	void balanceBeyond34DigitsStaysExact() {
 		String balance = "1234567890123456789012345678901234567890";
 
-		assertThat(convert(JPY, Map.of(JPY, balance)).total().toPlainString()).isEqualTo(balance);
+		assertThat(convert(CZK, Map.of(JPY, balance)).total().toPlainString())
+			.isEqualTo("171296294754629629475462962947546296294.74");
 	}
 
 	@Test
@@ -148,6 +149,33 @@ class CurrencyConverterTest {
 		Conversion conversion = this.converter.convert(holdings, CZK, NO_LOOKUP_ALLOWED);
 
 		assertThat(conversion.total().toPlainString()).isEqualTo("12.34");
+	}
+
+	@Test
+	void czkInAMixedWalletIsNotLookedUp() {
+		// RATE_LOOKUP only knows CNB's real table, which has no CZK row.
+		assertThat(convert(USD, Map.of(CZK, "121.80"), Map.of(USD, "1.00")).total().toPlainString()).isEqualTo("6.58");
+		assertThat(convert(CZK, Map.of(CZK, "121.80"), Map.of(USD, "1.00")).total().toPlainString()).isEqualTo("143.61");
+	}
+
+	@Test
+	void holdingOnlyTheTargetCurrencyNeedsNoRates() {
+		BigDecimal amount = new BigDecimal("7.00");
+
+		Conversion conversion = this.converter.convert(Map.of(USD, amount), USD, NO_LOOKUP_ALLOWED);
+
+		assertThat(conversion.total().toPlainString()).isEqualTo("7.00");
+		assertThat(conversion.lines()).containsExactly(new ConvertedLine(USD, amount, amount));
+	}
+
+	@Test
+	void holdingTheTargetAndAnotherCurrencyNeedsBothRates() {
+		Map<Currency, BigDecimal> holdings = Map.of(EUR, new BigDecimal("5.00"), USD, new BigDecimal("7.00"));
+
+		assertThatThrownBy(() -> this.converter.convert(holdings, USD, ratesWithout(USD)))
+			.isInstanceOf(RateNotAvailableException.class);
+		assertThatThrownBy(() -> this.converter.convert(holdings, USD, ratesWithout(EUR)))
+			.isInstanceOf(RateNotAvailableException.class);
 	}
 
 	@Test

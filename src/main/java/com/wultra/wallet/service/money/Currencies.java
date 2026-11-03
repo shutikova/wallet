@@ -12,6 +12,8 @@ import com.wultra.wallet.model.error.UnsupportedCurrencyException;
 
 public final class Currencies {
 
+	public static final Currency CZK = Currency.getInstance("CZK");
+
 	// CZK and CNB's daily table of 30 Oct 2026, without XDR, which has no ISO 4217 decimal places.
 	// A fixed list means deposits and withdrawals never need CNB (see README decision 7).
 	static final Set<Currency> SUPPORTED = Stream

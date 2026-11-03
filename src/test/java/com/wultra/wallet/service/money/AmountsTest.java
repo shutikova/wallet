@@ -86,10 +86,4 @@ class AmountsTest {
 			.isInstanceOf(UnsupportedCurrencyException.class);
 	}
 
-	@Test
-	void formatsWithoutAnExponent() {
-		assertThat(Amounts.format(new BigDecimal("1E+3"))).isEqualTo("1000");
-		assertThat(Amounts.format(new BigDecimal("5.00"))).isEqualTo("5.00");
-	}
-
 }

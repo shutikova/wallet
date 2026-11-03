@@ -37,10 +37,6 @@ public final class Amounts {
 		return amount.setScale(allowedDecimals);
 	}
 
-	public static String format(BigDecimal amount) {
-		return amount.toPlainString();
-	}
-
 	private static int significantDigits(String integerPart) {
 		int firstNonZero = 0;
 		while (firstNonZero < integerPart.length() && integerPart.charAt(firstNonZero) == '0') {

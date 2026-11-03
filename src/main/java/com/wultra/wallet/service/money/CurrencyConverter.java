@@ -43,7 +43,7 @@ public final class CurrencyConverter {
 
 	// CZK is always 1 and is never looked up, so it works without CNB (see README decision 7).
 	private static Rate rateOf(Currency currency, Function<Currency, Optional<Rate>> rates) {
-		if (CZK.equals(currency)) {
+		if (Currencies.CZK.equals(currency)) {
 			return Rate.CZK;
 		}
 		return rates.apply(currency).orElseThrow(() -> new RateNotAvailableException(currency));
