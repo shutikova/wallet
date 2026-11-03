@@ -15,16 +15,16 @@ public final class Amounts {
 	private Amounts() {
 	}
 
-	// All limits are checked on the text, before any BigDecimal is created (see README decision 4).
+	// All limits are checked on the text as typed, before any BigDecimal is created (see README decision 4).
 	public static BigDecimal parsePositive(String raw, Currency currency) {
 		int allowedDecimals = Currencies.requireSupported(currency).getDefaultFractionDigits();
-		if (raw == null || !PLAIN_DECIMAL.matcher(raw).matches()) {
+		if (!isPlainDecimal(raw)) {
 			throw new InvalidAmountException("Amount must be a plain decimal number such as 10 or 10.50");
 		}
 		int dot = raw.indexOf('.');
-		String integerPart = (dot < 0) ? raw : raw.substring(0, dot);
+		int integerDigits = (dot < 0) ? raw.length() : dot;
 		int decimals = (dot < 0) ? 0 : raw.length() - dot - 1;
-		if (significantDigits(integerPart) > MAX_INTEGER_DIGITS) {
+		if (integerDigits > MAX_INTEGER_DIGITS) {
 			throw new InvalidAmountException("Amount must have at most " + MAX_INTEGER_DIGITS + " digits before the decimal point");
 		}
 		if (decimals > allowedDecimals) {
@@ -37,12 +37,9 @@ public final class Amounts {
 		return amount.setScale(allowedDecimals);
 	}
 
-	private static int significantDigits(String integerPart) {
-		int firstNonZero = 0;
-		while (firstNonZero < integerPart.length() && integerPart.charAt(firstNonZero) == '0') {
-			firstNonZero++;
-		}
-		return integerPart.length() - firstNonZero;
+	// Also the format of CNB's rates (see README decision 2).
+	public static boolean isPlainDecimal(String text) {
+		return text != null && PLAIN_DECIMAL.matcher(text).matches();
 	}
 
 }

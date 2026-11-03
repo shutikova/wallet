@@ -51,14 +51,15 @@ class AmountsTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = { "999999999999999", "999999999999999.99", "0999999999999999", "000000000000000000001" })
-	void allowsFifteenIntegerDigitsNotCountingLeadingZeros(String raw) {
+	@ValueSource(strings = { "999999999999999", "999999999999999.99", "000000000000001" })
+	void allowsFifteenIntegerDigits(String raw) {
 		assertThat(Amounts.parsePositive(raw, USD).signum()).isPositive();
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = { "1000000000000000", "1000000000000000.00", "9999999999999999" })
-	void rejectsMoreThanFifteenIntegerDigits(String raw) {
+	@ValueSource(strings = { "1000000000000000", "1000000000000000.00", "9999999999999999", "0999999999999999",
+			"0000000000000001" })
+	void rejectsMoreThanFifteenIntegerDigitsAsTyped(String raw) {
 		assertThatThrownBy(() -> Amounts.parsePositive(raw, USD)).isInstanceOf(InvalidAmountException.class);
 	}
 
@@ -69,14 +70,14 @@ class AmountsTest {
 
 		assertThatThrownBy(() -> Amounts.parsePositive(millionDigits, USD)).isInstanceOf(InvalidAmountException.class);
 		assertThatThrownBy(() -> Amounts.parsePositive("1e999999999", USD)).isInstanceOf(InvalidAmountException.class);
+		assertThatThrownBy(() -> Amounts.parsePositive("0".repeat(1_000_000) + "1", USD))
+			.isInstanceOf(InvalidAmountException.class);
 	}
 
-	@Test
-	@Timeout(value = 5, unit = TimeUnit.SECONDS)
-	void handlesAMillionLeadingZerosQuickly() {
-		String paddedOne = "0".repeat(1_000_000) + "1";
-
-		assertThat(Amounts.parsePositive(paddedOne, USD).toPlainString()).isEqualTo("1.00");
+	@ParameterizedTest
+	@CsvSource({ "21.814,true", "100,true", "2.1814e3,false", "+21.814,false", "'21,814',false" })
+	void recognizesAPlainDecimal(String text, boolean expected) {
+		assertThat(Amounts.isPlainDecimal(text)).isEqualTo(expected);
 	}
 
 	@ParameterizedTest

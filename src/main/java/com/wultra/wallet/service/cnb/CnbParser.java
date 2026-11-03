@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 import com.wultra.wallet.model.Rate;
 import com.wultra.wallet.model.RateTable;
 import com.wultra.wallet.model.error.CnbFetchException;
+import com.wultra.wallet.service.money.Amounts;
 import com.wultra.wallet.service.money.Currencies;
 import org.springframework.stereotype.Component;
 
@@ -54,8 +55,7 @@ public class CnbParser {
 					throw new CnbFetchException("CNB rate table has a malformed row");
 				}
 				if (Currencies.isSupported(columns[CODE_COLUMN])) {
-					rates.put(Currency.getInstance(columns[CODE_COLUMN]),
-							new Rate(new BigDecimal(columns[RATE_COLUMN]), Integer.parseInt(columns[AMOUNT_COLUMN])));
+					rates.put(Currency.getInstance(columns[CODE_COLUMN]), parseRate(columns));
 				}
 			}
 			if (rates.isEmpty()) {
@@ -66,6 +66,14 @@ public class CnbParser {
 		catch (IllegalArgumentException | DateTimeParseException ex) {
 			throw new CnbFetchException("CNB rate table has an invalid value", ex);
 		}
+	}
+
+	// Plain decimals only, because new BigDecimal would read a damaged 2.1814e3 as 2181.4 (see README decision 2).
+	private static Rate parseRate(String[] columns) {
+		if (!Amounts.isPlainDecimal(columns[RATE_COLUMN])) {
+			throw new CnbFetchException("CNB rate table has an invalid rate");
+		}
+		return new Rate(new BigDecimal(columns[RATE_COLUMN]), Integer.parseInt(columns[AMOUNT_COLUMN]));
 	}
 
 	// The date of the table, which can be older than the date that was requested.

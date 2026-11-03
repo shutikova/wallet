@@ -93,7 +93,9 @@ class CnbParserTest {
 			"30 Oct 2026 #209 -> 31 Feb 2026 #209", "30 Oct 2026 #209 -> 31 Apr 2026 #209", "30 Oct 2026 #209 -> 30 Oct 2026",
 			"Amount|Code -> Code|Amount", "USA|dollar|1|USD|21.814 -> USA|dollar|1|USD",
 			"USA|dollar|1|USD|21.814 -> USA|dollar|1|USD|21.814|x", "IMF|SDR|1|XDR|29.505 -> IMF|SDR|1|XDR",
-			"|USD|21.814 -> |USD|21,814", "|USD|21.814 -> |USD|0.000", "|1|USD| -> |x|USD|", "|1|USD| -> |3|USD|" })
+			"|USD|21.814 -> |USD|21,814", "|USD|21.814 -> |USD|0.000", "|USD|21.814 -> |USD|2.1814e3",
+			"|USD|21.814 -> |USD|100e2147483647", "|USD|21.814 -> |USD|+21.814", "|USD|21.814 -> |USD|-21.814",
+			"|1|USD| -> |x|USD|", "|1|USD| -> |3|USD|" })
 	void rejectsADamagedTable(String original, String damaged) {
 		String body = REAL_FILE.replace(original, damaged);
 
